@@ -207,17 +207,45 @@ func main() {
 	//Flag Variables
 	var new_agent string
 	var faction string
-	var agent string
+	var get_agent bool
+	var save_file string
 
 	//Base options
-	flag.StringVar(&url_base, "base-url", "https://api.spacetraders.io", "Specifies the base url. Paths to resources will be appended to this. default is https://api.spacetraders.io/v2")
+	flag.StringVar(
+		&url_base,
+		"base-url",
+		"https://api.spacetraders.io",
+		"Specifies the base url. Paths to resources will be appended to this. default is https://api.spacetraders.io/v2",
+	)
 
 	// Options for creating a new agent
-	flag.StringVar(&new_agent, "create-user", "", "Creates a new Space Traders agent account.")
-	flag.StringVar(&faction, "faction", "COSMIC", "Specifies the faction. Default is COSMIC")
+	flag.StringVar(
+		&new_agent,
+		"create-user",
+		"",
+		"Creates a new Space Traders agent account.\nSave files are of the form savefiles/[agent].json",
+	)
+	flag.StringVar(
+		&faction,
+		"faction",
+		"COSMIC",
+		"Specifies the faction. Default is COSMIC",
+	)
+
+	//Options for getting agent data
+	flag.BoolVar(
+		&get_agent,
+		"get-agent",
+		false,
+		"View the agent details.",
+	)
 
 	//Misc options
-	flag.StringVar(&agent, "user", "", "Get the details of an agent (/my/agent)")
+	flag.StringVar(&save_file,
+		"savefile",
+		"",
+		"Specify the save file\nIf you are creating a new agent, the new agent will get their own save file. This file will be used for any other operations.",
+	)
 
 	flag.Parse()
 
@@ -227,41 +255,91 @@ func main() {
 		if err != nil {
 			log.Fatal("Failed to create agent.\n\t", err)
 		}
-		if agent == "" {
-			agent = new_agent
+		if save_file == "" {
+			save_file = new_agent + ".json"
 		}
 		fmt.Println("Dumping details for new agent.\n", agentJson)
 	}
 
-	if agent != "" {
-		agentfiledata, err := os.ReadFile("savefiles/agent_" + agent + ".json")
+	if save_file != "" {
+		if _, err := os.Stat(save_file); os.IsNotExist(err) {
+			save_file = "savefiles/" + save_file
+			if _, err := os.Stat(save_file); os.IsNotExist(err) {
+				log.Fatal("Unable to find save file: " +
+					save_file +
+					"\n" + err.Error(),
+				)
+			} else if err != nil {
+				log.Fatal("Save file might exist but there was a problem: " +
+					save_file +
+					"\n" + err.Error(),
+				)
+			}
+
+		} else if err != nil {
+			log.Fatal("Save file might exist but there was a problem: " +
+				save_file +
+				"\n" + err.Error(),
+			)
+		}
+
+		agentfiledata, err := os.ReadFile(save_file)
 		if err != nil {
-			log.Fatal("While trying to read save file: savefiles/agent_" + agent + ".json\n" + err.Error())
+			log.Fatal(
+				"While trying to read save file: " +
+					save_file +
+					err.Error(),
+			)
 		}
 		agentfiledata = bytes.TrimRight(agentfiledata, "\x00")
 
 		userToken, err := getToken(agentfiledata)
 		if err != nil {
-			log.Fatal("While trying to get token from save file: savefiles/agent_" + agent + ".json\n" + err.Error())
+			log.Fatal(
+				"While trying to get token from save file: savefiles/" +
+					save_file +
+					".json\n" +
+					err.Error(),
+			)
 		}
-
-		token_GET, err = http.NewRequest("GET", url_base, strings.NewReader(""))
+		token_GET, err = http.NewRequest(
+			"GET",
+			url_base,
+			strings.NewReader(""),
+		)
 		if err != nil {
-			log.Fatal("While trying to create GET request template with agent token.\n", err.Error())
+			log.Fatal(
+				"While trying to create GET request template with agent token.\n",
+				err.Error())
 		}
-		token_GET.Header.Add("Authorization", "Bearer "+string(userToken))
+		token_GET.Header.Add(
+			"Authorization",
+			"Bearer "+string(userToken),
+		)
 
-		token_POST, err = http.NewRequest("POST", url_base, strings.NewReader(""))
+		token_POST, err = http.NewRequest(
+			"POST",
+			url_base,
+			strings.NewReader(""),
+		)
 		if err != nil {
-			log.Fatal("While trying to create POST request template with agent token.\n", err.Error())
+			log.Fatal(
+				"While trying to create POST request template with agent token.\n",
+				err.Error(),
+			)
 		}
-		token_POST.Header.Add("Authorization", "Bearer "+string(userToken))
+		token_POST.Header.Add(
+			"Authorization",
+			"Bearer "+string(userToken),
+		)
+	}
 
-		agentDetails, agentReqStatus, err := getAgentDetails(token_GET)
+	if get_agent {
+		agentJSON, _, err := getAgentDetails(token_GET)
 		if err != nil {
-			log.Fatal("While trying to get agent details with token from save file: savefiles/agent_" + agent + ".json\nRequest status: " + agentReqStatus + err.Error())
+			log.Fatal("Trying to load agent details.\n", err)
 		}
 
-		fmt.Println("Got Agent. Details:\nRequest status: "+agentReqStatus+"\n", agentDetails)
+		fmt.Println("Agent Details:\n", agentJSON)
 	}
 }
