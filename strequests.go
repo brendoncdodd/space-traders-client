@@ -131,7 +131,7 @@ func createAgent(agent string, faction string) (string, error) {
 
 	if bodySize >= BUFFER_SIZE {
 		return string(responseBody), fmt.Errorf(
-			"%s Response body too big for buffer (%i bytes).",
+			"%s Response body too big for buffer (%d bytes).",
 			error_prefix,
 			BUFFER_SIZE,
 		)
@@ -200,7 +200,7 @@ func getAgentDetails(requestTemplate *http.Request) (string, string, error) {
 	}
 	if bodySize >= BUFFER_SIZE {
 		return string(responseBody), resp.Status, fmt.Errorf(
-			"%s Response body too big for buffer (%i bytes).",
+			"%s Response body too big for buffer (%d bytes).",
 			error_prefix,
 			BUFFER_SIZE,
 		)
@@ -265,7 +265,7 @@ func findNearestWaypointWithTraits(requestTemplate *http.Request, shipSymbol str
 	}
 	if responseBodySize >= BUFFER_SIZE {
 		err = fmt.Errorf(
-			"%s Response too big for buffer (%i bytes)\n%s",
+			"%s Response too big for buffer (%d bytes)\n%s",
 			error_prefix,
 			BUFFER_SIZE,
 			responseBody,
