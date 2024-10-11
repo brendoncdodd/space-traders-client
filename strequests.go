@@ -51,17 +51,32 @@ func init() {
 
 func decodeToken(data []byte) ([]byte, error) {
 	var jsonMap map[string]any
+	error_prefix := "While trying to decode JSON and get token."
 
 	err := json.Unmarshal(data, &jsonMap)
 	if err != nil {
-		return []byte{}, errors.New("While trying to get token, while trying to decode JSON.\n" + err.Error())
+		return []byte{}, fmt.Errorf(
+			"%s%w",
+			error_prefix,
+			err,
+		)
 	}
 
-	if token, ok := jsonMap["data"].(map[string]any)["token"].(string); ok {
-		return []byte(token), err
+	if data, ok := jsonMap["data"].(map[string]any); ok {
+		if token, ok := data["token"].(string); ok {
+			return []byte(token), err
+		} else {
+			return nil, fmt.Errorf(
+				"%s data[token] is not string.",
+				error_prefix,
+			)
+		}
+	} else {
+		return nil, fmt.Errorf(
+			"%s data is not a map of strings.",
+			error_prefix,
+		)
 	}
-
-	return []byte{}, errors.New("Could not get token. Here's the JSON.\n" + string(data))
 }
 
 func createAgent(agent string, faction string) (string, error) {
@@ -96,7 +111,6 @@ func createAgent(agent string, faction string) (string, error) {
 
 	return string(responseBody), err
 }
-
 
 // Not fully implemented. Returns the raw JSON and the request status.
 // Attempts to preserve the body of the template but if it fails gives it an empty one. We don't guard this. Even if you give this an extremely long body it will copy the whole thing twice.
@@ -198,4 +212,3 @@ func findNearestWaypointWithTraits(shipSymbol string, traits []string) (waypoint
 
 	return
 }
-
