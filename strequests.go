@@ -157,32 +157,16 @@ func getAgentDetails(requestTemplate *http.Request) (string, string, error) {
 		requestTemplate = token_GET
 	}
 
-	oldRequestBody, err := io.ReadAll(requestTemplate.Body)
-	if err != nil {
-		oldRequestBody = []byte("")
-	}
-
 	req := requestTemplate.Clone(requestTemplate.Context())
-
-	err = requestTemplate.Body.Close()
-	if err != nil {
-		return "", "", fmt.Errorf(
-			"%s Closing request template body after cloning. %w",
-			error_prefix,
-			err,
-		)
-	}
-	requestTemplate.Body = io.NopCloser(bytes.NewReader(oldRequestBody))
-
 	req.Body = io.NopCloser(strings.NewReader(""))
-	defer req.Body.Close()
-
 	req.URL.Path = "/v2/my/agent"
+	defer req.Body.Close()
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", resp.Status, fmt.Errorf(
-			"%s Trying to send GET request. %w",
+			"%s Trying to send GET request: %s %w",
+			req.URL.String(),
 			error_prefix,
 			err,
 		)
@@ -213,12 +197,19 @@ func getAgentDetails(requestTemplate *http.Request) (string, string, error) {
 // TODO: Get ship location.
 // TODO: Get symbols and locations of waypoint with traits.
 // TODO: Remove lines that assign test values.
-func findNearestWaypointWithTraits(requestTemplate *http.Request, shipSymbol string, traits []string) (waypointSymbol string, err error) {
+func findNearestWaypointWithTraits(
+	requestTemplate *http.Request,
+	shipSymbol string,
+	traits []string,
+) (
+	waypointSymbol string,
+	err error,
+) {
 	const BUFFER_SIZE = 20000
 	var shipLocation Vector2
 	var rawShipObject map[string]any
 	error_prefix := "Trying to find nearest waypoint with traits."
-	minDistance := math.MaxFloat64
+	minDistance := math.Inf(1)
 	waypoints := make(map[string]Vector2)
 	responseBody := make([]byte, BUFFER_SIZE)
 
@@ -226,11 +217,53 @@ func findNearestWaypointWithTraits(requestTemplate *http.Request, shipSymbol str
 		requestTemplate = token_GET
 	}
 
-	//Convert traits to a format we can use in the request.
 
-	//Get the symbols and locations of all waypoints in the system
 
-	//Get the ship location (where you want to find nearest to) https://api.spacetraders.io/v2/my/ships/{shipSymbol}/nav
+	//Get the symbols and locations of all waypoints https://api.spacetraders.io/v2/systems/{systemSymbol}/waypoints
+	//Query Parameters
+	//	limit
+	//	integer
+	//	How many entries to return per page
+	//	
+	//	>= 1
+	//	<= 20
+	//	Default:
+	//	10
+	//	page
+	//	integer
+	//	What entry offset to request
+	//	
+	//	>= 1
+	//	Default:
+	//	1
+	//	traits
+	//	stringarray[string]
+	//	
+	//	one of: string
+	//	The unique identifier of the trait.
+	//	
+	//	type
+	//	string
+	//	Filter waypoints by type.
+	//	
+	//	Allowed values:
+	//	PLANET
+	//	GAS_GIANT
+	//	MOON
+	//	ORBITAL_STATION
+	//	JUMP_GATE
+	//	ASTEROID_FIELD
+	//	ASTEROID
+	//	ENGINEERED_ASTEROID
+	//	ASTEROID_BASE
+	//	NEBULA
+	//	DEBRIS_FIELD
+	//	GRAVITY_WELL
+	//	ARTIFICIAL_GRAVITY_WELL
+	//	FUEL_STATION
+
+
+	//Get the ship location https://api.spacetraders.io/v2/my/ships/{shipSymbol}/nav
 	req := requestTemplate.Clone(requestTemplate.Context())
 	requestTemplate.Body.Close()
 
@@ -293,6 +326,17 @@ func findNearestWaypointWithTraits(requestTemplate *http.Request, shipSymbol str
 	} else {
 		shipLocation = Vector2{destination["x"], destination["y"]}
 	}
+
+	//Delete this and create the request for GET https://api.spacetraders.io/v2/systems/{systemSymbol}/waypoints
+	req = new(http.Request)
+	defer req.Body.Close()
+
+	//Add parameters to the waypoints request
+	q := req.URL.Query()
+	for _, v := range traits {
+		q.Add("traits", v)
+	}
+	req.URL.RawQuery = q.Encode()
 
 	waypoints["DERP"] = Vector2{3, 4}     //Delete when we actually have waypoints
 	waypoints["DERP2"] = Vector2{7, 1024} //Delete when we actually have waypoints
