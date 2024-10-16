@@ -146,9 +146,12 @@ func main() {
 	}
 
 	if get_agent {
-		agentJSON, _, err := getAgentDetails(token_GET)
+		agentJSON, status, err := getAgentDetails(token_GET)
 		if err != nil {
 			log.Fatal("Trying to load agent details.\n", err)
+		}
+		if !strings.Contains(status, "200") {
+			fmt.Println(status)
 		}
 
 		fmt.Println("Agent Details:\n", agentJSON)

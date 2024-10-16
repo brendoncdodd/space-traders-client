@@ -141,13 +141,8 @@ func createAgent(agent string, faction string) (string, error) {
 }
 
 // Not fully implemented. Returns the raw JSON and the request status, in that order.
-// Give it an http.Request with the GET method and "Authorization: Bearer [token] header already added.
-//
+// 	Give it an http.Request with the GET method and "Authorization: Bearer [token] header already added.
 //	or nil to use token_GET
-//
-// Attempts to preserve the body of the template but if it fails gives it an empty one.
-//
-//	We don't guard this. Even if you give this an extremely long body it will copy the whole thing twice.
 func getAgentDetails(requestTemplate *http.Request) (string, string, error) {
 	const BUFFER_SIZE = 10000
 	error_prefix := "Trying to get agent details."
@@ -168,7 +163,7 @@ func getAgentDetails(requestTemplate *http.Request) (string, string, error) {
 			"%s Trying to send GET request: %s %w",
 			req.URL.String(),
 			error_prefix,
-			err,
+		err,
 		)
 	}
 	defer resp.Body.Close()
