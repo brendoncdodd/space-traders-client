@@ -75,7 +75,8 @@ func main() {
 	if save_file != "" {
 		if _, err = os.Stat(save_file); os.IsNotExist(err) {
 			save_file = "savefiles/" + save_file
-			if _, err := os.Stat(save_file); os.IsNotExist(err) {
+			err = nil
+			if _, err = os.Stat(save_file); os.IsNotExist(err) {
 				log.Fatal("Unable to find save file: " +
 					save_file +
 					"\n" + err.Error(),
